@@ -1,0 +1,187 @@
+<!-- index.html : Passphrase Generator Website (digit‑only version) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Passphrase Generator</title>
+  <style>
+    :root {
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --primary: #4f46e5;
+      --secondary: #6366f1;
+      --background: #f9fafb;
+      --card-bg: #ffffff;
+      --text-color: #111827;
+      --border-radius: 12px;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    body {
+      margin: 0;
+      padding: 2rem;
+      background: var(--background);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 2rem 2.5rem;
+      box-shadow: var(--shadow);
+      max-width: 520px;
+      width: 100%;
+    }
+    h1 {
+      text-align: center;
+      color: var(--primary);
+      margin-bottom: 1.75rem;
+    }
+    label {
+      display: block;
+      margin: 0.5rem 0 0.2rem;
+      font-weight: 500;
+    }
+    input[type="number"], input[type="text"], select {
+      width: 100%;
+      padding: 0.55rem 0.6rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    input[type="checkbox"] {
+      margin-right: 0.45rem;
+    }
+    .section {
+      margin-top: 1rem;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 1rem;
+    }
+    .btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.8rem;
+      width: 100%;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+    .btn:hover { background: var(--secondary); }
+
+    .output-wrapper {
+      position: relative;
+      margin-top: 1.25rem;
+    }
+    .output {
+      min-height: 3.5rem;
+      padding: 0.9rem;
+      background: #eef2ff;
+      border-radius: 6px;
+      text-align: center;
+      word-break: break-word;
+      font-family: "Courier New", monospace;
+      font-size: 1rem;
+    }
+    .copy-btn {
+      position: absolute;
+      right: 0.5rem;
+      top: 0.5rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Passphrase Generator</h1>
+
+    <label for="numWords">Number of Words</label>
+    <input type="number" id="numWords" value="4" min="1" max="100" />
+
+    <label for="separator">Separator</label>
+    <input type="text" id="separator" value="-" />
+    <label style="margin-bottom:0.5rem;"><input type="checkbox" id="randomSeparator" /> Use Random Separators</label>
+
+    <div class="section">
+      <label><input type="checkbox" id="capitalizeEnable" /> Enable Capitalisation</label>
+      <div style="margin-left: 1rem;">
+        <label><input type="radio" name="capitalizeType" value="random" checked /> Random word upper‑case</label><br>
+        <label><input type="radio" name="capitalizeType" value="first" /> Capitalize first letter of each word</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <label><input type="checkbox" id="includeNumber" /> Include random number</label>
+    </div>
+
+    <button class="btn" onclick="generatePassphrase()">Generate Passphrase</button>
+
+    <div class="output-wrapper">
+      <button class="copy-btn" onclick="copyPassphrase()">Copy 🔗</button>
+      <div class="output" id="output"></div>
+    </div>
+  </div>
+
+  <script>
+    let wordlist = [];
+    fetch('wordlist.txt')
+      .then(res => res.text())
+      .then(txt => { wordlist = txt.split(/\r?\n/).filter(w => w.trim()); });
+
+    const sepChars = "!@#$%^&*().,/-_=+1234567890";
+    const randSep = () => sepChars[Math.floor(Math.random() * sepChars.length)];
+
+    function generatePassphrase() {
+      const n = +document.getElementById('numWords').value;
+      const customSep = document.getElementById('separator').value;
+      const useRandSep = document.getElementById('randomSeparator').checked;
+      const capOn = document.getElementById('capitalizeEnable').checked;
+      const capType = document.querySelector('input[name="capitalizeType"]:checked').value;
+      const addDigit = document.getElementById('includeNumber').checked;
+
+      if (!wordlist.length) { document.getElementById('output').innerText = 'Wordlist loading…'; return; }
+
+      let words = Array.from({ length: n }, () => wordlist[Math.floor(Math.random() * wordlist.length)]);
+
+      if (capOn) {
+        if (capType === 'random') {
+          const i = Math.floor(Math.random() * words.length);
+          words[i] = words[i].toUpperCase();
+        } else { // first‑letter cap
+          words = words.map(w => w.charAt(0).toUpperCase() + w.slice(1));
+        }
+      }
+
+      if (addDigit) {
+        const digit = Math.floor(Math.random() * 10); // 0‑9 only
+        const idx = Math.floor(Math.random() * (words.length + 1));
+        words.splice(idx, 0, digit);
+      }
+
+      let pass = words[0].toString();
+      for (let i = 1; i < words.length; i++) {
+        const sep = useRandSep ? randSep() : customSep;
+        pass += sep + words[i];
+      }
+
+      document.getElementById('output').innerText = pass;
+    }
+
+    function copyPassphrase() {
+      const text = document.getElementById('output').innerText;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Passphrase copied!');
+      });
+    }
+  </script>
+</body>
+</html>
